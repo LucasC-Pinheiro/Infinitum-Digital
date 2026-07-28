@@ -1,3 +1,3 @@
 export function Grain() {
-  return <div>Grain</div>
+  return <div className="grain" aria-hidden="true" />
 }
