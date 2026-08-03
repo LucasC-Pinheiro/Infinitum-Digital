@@ -1,9 +1,10 @@
 import { useRef } from 'react'
 import { Rich } from '@/components/Rich'
+import { CONTACT_EMAIL, WHATSAPP_NUMBER } from '@/content/contact'
 import { isCoarsePointer } from '@/lib/env'
 import { useLanguage } from '@/lib/i18n/useLanguage'
 
-export const CONTACT_EMAIL = 'ola@infinitum.digital'
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
 
 export function CallToAction({ onGoHome }: { onGoHome: () => void }) {
   const { t } = useLanguage()
@@ -29,23 +30,30 @@ export function CallToAction({ onGoHome }: { onGoHome: () => void }) {
         <b>∞ 360°</b> <span>{t('s8label')}</span>
       </div>
 
-      <Rich as="h2" className="ctaBig r" data-d="1" text={t('s8h')} />
+      {/* Agrupa o texto e os links principais num único bloco — dá ao campo
+          de partículas um retângulo estável para calcular a repulsão de
+          texto (ver src/lib/field/layout.ts). */}
+      <div className="ctaBlock">
+        <Rich as="h2" className="ctaBig r" data-d="1" text={t('s8h')} />
 
-      <a
-        ref={magnetRef}
-        className="magnet r"
-        data-d="2"
-        id="magnet"
-        href={`mailto:${CONTACT_EMAIL}`}
-        onPointerMove={attract}
-        onPointerLeave={release}
-      >
-        <span>{t('s8b')}</span> <span aria-hidden="true">∞</span>
-      </a>
+        <a
+          ref={magnetRef}
+          className="magnet r"
+          data-d="2"
+          id="magnet"
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onPointerMove={attract}
+          onPointerLeave={release}
+        >
+          <span>{t('s8b')}</span> <span aria-hidden="true">∞</span>
+        </a>
 
-      <a className="mailto r" data-d="3" href={`mailto:${CONTACT_EMAIL}`}>
-        {CONTACT_EMAIL}
-      </a>
+        <a className="mailto r" data-d="3" href={`mailto:${CONTACT_EMAIL}`}>
+          {CONTACT_EMAIL}
+        </a>
+      </div>
 
       <button type="button" id="close" className="r" data-d="4" onClick={onGoHome}>
         {t('s8c')}

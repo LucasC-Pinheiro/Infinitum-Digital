@@ -13,10 +13,17 @@ import {
 } from '@/lib/field/states'
 import { resolveTier } from '@/lib/field/tier'
 
+const TEXT_RECT_COUNT = 4
+
 const VERTEX_SHADER = `
 attribute vec3 aPosA; attribute vec3 aPosB; attribute float aSeed; attribute float aT;
 uniform float uMix,uTime,uSize,uFlow,uPulse,uEnergy;
+uniform vec4 uTextRect[${TEXT_RECT_COUNT}];
 varying float vGlow; varying float vSeed;
+
+const float TEXT_PAD = 0.12;
+const float TEXT_PUSH = 0.68;
+
 void main(){
   vec3 p = mix(aPosA,aPosB,uMix);
   float s = aSeed*6.2831;
@@ -26,6 +33,35 @@ void main(){
   p.z += sin(uTime*0.41 + s*2.3)*(amp*1.3);
   vec4 mv = modelViewMatrix*vec4(p,1.0);
   gl_Position = projectionMatrix*mv;
+
+  // Repulsão de texto: em espaço de tela, empurra a partícula para fora de
+  // qualquer bloco de texto ativo da seção atual — o campo abre espaço ao
+  // redor da leitura em vez de passar por cima. Blocos de texto grandes
+  // (ex.: .head) não cabem inteiramente fora do próprio raio da lemniscata
+  // sem destruir a forma, então a magnitude é limitada (não é a distância
+  // exata até a borda) — prioriza deformação orgânica e reconhecível sobre
+  // eliminação total da sobreposição. Direção mistura os eixos x/y conforme
+  // o dominante, para não ter nem instabilidade radial no centro nem costura
+  // dura de escolha binária de eixo. Borda macia via smoothstep.
+  vec2 ndc = gl_Position.xy / gl_Position.w;
+  vec2 textPush = vec2(0.0);
+  for (int i = 0; i < ${TEXT_RECT_COUNT}; i++) {
+    vec4 r = uTextRect[i];
+    if (r.x >= r.z) continue;
+    vec2 center = (r.xy + r.zw) * 0.5;
+    vec2 half_ = (r.zw - r.xy) * 0.5 + TEXT_PAD;
+    vec2 u = (ndc - center) / half_;
+    vec2 au = abs(u);
+    float d = max(au.x, au.y);
+    float influence = 1.0 - smoothstep(0.0, 1.0, clamp(d, 0.0, 1.0));
+    if (influence <= 0.0) continue;
+    vec2 w = au / (au.x + au.y + 0.0001);
+    vec2 dir = normalize(sign(u) * w + 1e-6);
+    textPush += dir * influence * TEXT_PUSH;
+  }
+  ndc += textPush;
+  gl_Position.xy = ndc * gl_Position.w;
+
   float band = pow(1.0-abs(fract(aT - uTime*0.085)*2.0-1.0),9.0);
   float ring = pow(1.0-abs(fract(aT - uPulse)*2.0-1.0),16.0)*step(0.001,uPulse);
   vGlow = band*uFlow + ring + uEnergy*0.3;
@@ -104,6 +140,9 @@ export function InfinityField() {
     let bufA: Float32Array | null = null
     let bufB: Float32Array | null = null
     let uniforms: AnimatedUniforms | null = null
+    /** Array de retângulos de texto (NDC) enviado ao vertex shader; ver TEXT_RECT_COUNT. */
+    let textRectUniforms: Array<{ set(x: number, y: number, z: number, w: number): void }> | null =
+      null
     let disposeGl: (() => void) | null = null
     let resizeGl: (() => void) | null = null
     let renderGl: (() => void) | null = null
@@ -240,6 +279,29 @@ export function InfinityField() {
       uniforms.uPulse.value = fieldRuntime.pulse > 0 ? 1 - fieldRuntime.pulse : 0
       uniforms.uOpacity.value = damp(uniforms.uOpacity.value, sCur > 0.05 ? 1 : 0, 0.1, dt)
 
+      // Retângulos de texto da seção mais próxima, convertidos para NDC. Só
+      // aritmética — a medição cara (getBoundingClientRect) já está em cache
+      // no layout e só se atualiza quando layoutDirty.
+      if (textRectUniforms) {
+        const nearestState = clamp(Math.round(sCur), 0, STATE_COUNT - 1)
+        const rects = layout.textRects[nearestState]
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        for (let i = 0; i < textRectUniforms.length; i++) {
+          const rect = rects?.[i]
+          if (!rect) {
+            textRectUniforms[i].set(1, 1, -1, -1)
+            continue
+          }
+          const top = rect.pageTop - fieldRuntime.scrollY
+          const xMin = (rect.left / vw) * 2 - 1
+          const xMax = ((rect.left + rect.width) / vw) * 2 - 1
+          const yMin = 1 - ((top + rect.height) / vh) * 2
+          const yMax = 1 - (top / vh) * 2
+          textRectUniforms[i].set(xMin, yMin, xMax, yMax)
+        }
+      }
+
       pointerLerpX = damp(pointerLerpX, fieldRuntime.pointerX, 0.05, dt)
       pointerLerpY = damp(pointerLerpY, fieldRuntime.pointerY, 0.05, dt)
 
@@ -322,6 +384,13 @@ export function InfinityField() {
         geometry.setAttribute('aT', new THREE.BufferAttribute(along, 1))
         geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 60)
 
+        // Sentinela desativada (xMin >= xMax) até o primeiro layout ser lido.
+        const textRects = Array.from(
+          { length: TEXT_RECT_COUNT },
+          () => new THREE.Vector4(1, 1, -1, -1),
+        )
+        textRectUniforms = textRects
+
         const glUniforms = {
           uMix: { value: 0 },
           uTime: { value: 0 },
@@ -332,6 +401,7 @@ export function InfinityField() {
           uEnergy: { value: 0 },
           uWhite: { value: new THREE.Color(0xf3f0ea) },
           uAmber: { value: new THREE.Color(0xe2a24a) },
+          uTextRect: { value: textRects },
         }
 
         const material = new THREE.ShaderMaterial({

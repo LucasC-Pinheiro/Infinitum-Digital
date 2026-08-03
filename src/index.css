@@ -251,6 +251,10 @@ h2 {
   line-height: 1;
   letter-spacing: -0.015em;
   max-width: 17ch;
+  /* Rede de segurança, não a defesa principal: a repulsão do campo (ver
+     InfinityField.tsx) já afasta as partículas do texto. Isto só cobre o
+     resíduo eventual de alguma partícula passando perto. */
+  text-shadow: 0 2px 18px rgba(12, 12, 13, 0.5);
 }
 h2 em {
   font-style: italic;
@@ -350,6 +354,47 @@ nav {
 .brand i {
   font-style: normal;
   color: var(--color-amber);
+}
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 2.5vw, 10.5px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.navLinks a {
+  color: var(--color-muted);
+  text-decoration: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: color 0.35s;
+}
+.navLinks a:hover {
+  color: var(--color-amber);
+}
+.navIcons {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.navIcons a {
+  color: var(--color-muted);
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  transition: color 0.35s;
+}
+.navIcons a:hover {
+  color: var(--color-amber);
+}
+@media (max-width: 899px) {
+  .navLinks,
+  .navIcons {
+    display: none;
+  }
 }
 .navRight {
   display: flex;
@@ -550,6 +595,7 @@ section {
   letter-spacing: -0.01em;
   max-width: 27ch;
   margin-top: clamp(14px, 3vw, 22px);
+  text-shadow: 0 2px 18px rgba(12, 12, 13, 0.5);
 }
 .manifesto em {
   font-style: italic;
@@ -697,7 +743,9 @@ section {
   padding-left: 15px;
 }
 .sMeta {
-  display: flex;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
   gap: 20px;
   flex-wrap: wrap;
   font-family: var(--font-mono);
@@ -789,6 +837,9 @@ section {
 #why.in .caps p:nth-child(6):before {
   transition-delay: 2.25s;
 }
+.capsWrap {
+  display: contents;
+}
 
 #cta {
   align-items: center;
@@ -797,6 +848,11 @@ section {
 }
 #cta h2 {
   max-width: none;
+}
+.ctaBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .ctaBig {
   font-family: var(--font-serif);
@@ -879,6 +935,33 @@ footer.site {
   text-transform: uppercase;
   color: var(--color-muted);
 }
+.footContact {
+  display: none;
+}
+@media (max-width: 899px) {
+  .footContact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 22px;
+    width: 100%;
+    order: 10;
+    padding-top: 14px;
+    margin-top: 2px;
+    border-top: 1px solid var(--color-line);
+  }
+  .footContact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.35s;
+  }
+  .footContact a:hover {
+    color: var(--color-amber);
+  }
+}
 
 @media (min-width: 900px) {
   .loop li {
@@ -888,6 +971,50 @@ footer.site {
 @media (max-width: 380px) {
   :root {
     --gut: 20px;
+  }
+}
+/* Abaixo da largura em que .caps quebraria em grid de 2 colunas, o traço
+   único vira vertical: uma coluna com as seis competências ao longo dela,
+   em vez de um traço horizontal truncado num grid genérico. */
+@media (max-width: 640px) {
+  .capsWrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: clamp(34px, 7vh, 58px);
+  }
+  .oneStroke {
+    flex: 0 0 1px;
+    width: 1px;
+    height: auto;
+    margin-top: 0;
+  }
+  .oneStroke:before {
+    transform: scaleY(0);
+    transform-origin: top center;
+  }
+  #why.in .oneStroke:before {
+    transform: scaleY(1);
+  }
+  .caps {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    flex: 1;
+  }
+  .caps p {
+    padding-top: 0;
+    padding-left: 30px;
+  }
+  .caps p:before {
+    top: 50%;
+    left: 0;
+    width: 16px;
+    height: 1px;
+    transform-origin: left center;
+    transform: translateY(-50%) scaleX(0);
+  }
+  #why.in .caps p:before {
+    transform: translateY(-50%) scaleX(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {

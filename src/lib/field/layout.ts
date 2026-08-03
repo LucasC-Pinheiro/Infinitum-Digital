@@ -8,12 +8,28 @@ export interface SectionLayout {
   height: number
 }
 
+/**
+ * Retângulo de um bloco de texto, em coordenadas de página — `left` e
+ * `width` já são estáveis (a página não rola na horizontal), mas `pageTop`
+ * precisa ser recombinado com o scroll atual a cada frame para virar
+ * coordenada de viewport, já que só remedimos quando `layoutDirty`.
+ */
+export interface TextRect {
+  pageTop: number
+  left: number
+  width: number
+  height: number
+}
+
 export interface LayoutCache {
   sections: SectionLayout[]
   collapseTop: number
   collapseHeight: number
   railWidth: number
   railMax: number
+  /** Retângulos de texto principais por estado do campo — só os estados com
+   * bug de legibilidade confirmado têm entrada aqui (ver TEXT_SELECTORS). */
+  textRects: Record<number, TextRect[]>
 }
 
 const EMPTY: LayoutCache = {
@@ -22,6 +38,52 @@ const EMPTY: LayoutCache = {
   collapseHeight: 1,
   railWidth: 1,
   railMax: 1,
+  textRects: {},
+}
+
+/**
+ * Seção raiz + seletores dos blocos de texto principais por estado do campo
+ * (ver lib/field/states.ts para o que cada índice representa). A raiz existe
+ * porque classes como `.head` se repetem em várias seções — sem escopar a
+ * busca a ela, `querySelectorAll` pega o `.head` de outras seções também e
+ * estoura o orçamento de retângulos antes de chegar ao seletor certo. Um
+ * estado sem entrada aqui simplesmente não participa da repulsão de texto.
+ */
+const TEXT_SELECTORS: Record<number, { root: string; selectors: string[] }> = {
+  2: { root: '#auto', selectors: ['.head', '.loop'] },
+  3: { root: '#web', selectors: ['.head', '.figures'] },
+  4: { root: '#systems', selectors: ['.manifesto'] },
+  5: { root: '#collapse', selectors: ['#collapseInner'] },
+  6: { root: '#about', selectors: ['.head', '.slide .pad'] },
+  7: { root: '#why', selectors: ['.head', '.caps'] },
+  8: { root: '#cta', selectors: ['.ctaBlock'] },
+}
+
+/** Teto de retângulos ativos por estado — mantém o array de uniforms do shader pequeno. */
+const MAX_TEXT_RECTS = 4
+
+function readTextRects(): Record<number, TextRect[]> {
+  const scrollY = window.scrollY
+  const out: Record<number, TextRect[]> = {}
+  for (const key of Object.keys(TEXT_SELECTORS)) {
+    const state = Number(key)
+    const { root, selectors } = TEXT_SELECTORS[state]
+    const rootEl = document.querySelector<HTMLElement>(root)
+    const rects: TextRect[] = []
+    if (rootEl) {
+      for (const selector of selectors) {
+        const nodes = rootEl.querySelectorAll<HTMLElement>(selector)
+        for (const el of nodes) {
+          if (rects.length >= MAX_TEXT_RECTS) break
+          const r = el.getBoundingClientRect()
+          if (r.width < 1 || r.height < 1) continue
+          rects.push({ pageTop: r.top + scrollY, left: r.left, width: r.width, height: r.height })
+        }
+      }
+    }
+    out[state] = rects
+  }
+  return out
 }
 
 /**
@@ -47,6 +109,7 @@ export function readLayout(rail: HTMLElement | null): LayoutCache {
     collapseHeight: collapse?.offsetHeight || 1,
     railWidth: rail?.clientWidth || 1,
     railMax: Math.max(1, (rail?.scrollWidth ?? 1) - (rail?.clientWidth ?? 0)),
+    textRects: readTextRects(),
   }
 }
 

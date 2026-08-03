@@ -67,6 +67,9 @@ export function About() {
     indexRef.current = i
     buzz(9)
     fieldRuntime.pulse = Math.max(fieldRuntime.pulse, 0.55)
+    // O retângulo de texto do slide ativo (usado pela repulsão do campo)
+    // muda de posição horizontal quando o trilho troca de slide.
+    markLayoutDirty()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {

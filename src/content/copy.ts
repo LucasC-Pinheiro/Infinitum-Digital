@@ -13,6 +13,13 @@ export const PT = {
   heroPlace: 'São Paulo — atendimento global',
   heroSecondPass: 'θ 360° — segunda volta',
 
+  navHome: 'Início',
+  navAbout: 'Sobre',
+  navContact: 'Contato',
+  navWhatsapp: 'WhatsApp',
+  navInstagram: 'Instagram',
+  navEmail: 'E-mail',
+
   s2label: 'IA e Automação',
   s2h: 'Trabalho que continua depois que você <em>fecha o notebook</em>.',
   s2p: 'Encontramos as decisões que a sua empresa repete e entregamos essas decisões a sistemas que não esquecem, não desviam e não dormem.',
@@ -71,6 +78,13 @@ export const EN: Record<CopyKey, string> = {
   heroCaps: 'AI · Software · Interfaces · Automation',
   heroPlace: 'São Paulo — worldwide',
   heroSecondPass: 'θ 360° — second pass',
+
+  navHome: 'Home',
+  navAbout: 'About',
+  navContact: 'Contact',
+  navWhatsapp: 'WhatsApp',
+  navInstagram: 'Instagram',
+  navEmail: 'Email',
 
   s2label: 'AI &amp; Automation',
   s2h: 'Work that continues after you <em>close the laptop</em>.',

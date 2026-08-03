@@ -19,12 +19,14 @@ export function Why() {
         </p>
       </div>
 
-      <div className="oneStroke" aria-hidden="true" />
+      <div className="capsWrap">
+        <div className="oneStroke" aria-hidden="true" />
 
-      <div className="caps">
-        {CAPABILITIES.map((key) => (
-          <p key={key}>{t(key)}</p>
-        ))}
+        <div className="caps">
+          {CAPABILITIES.map((key) => (
+            <p key={key}>{t(key)}</p>
+          ))}
+        </div>
       </div>
     </section>
   )
