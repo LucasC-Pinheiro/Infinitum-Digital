@@ -8,7 +8,7 @@ export function Why() {
   const { t } = useLanguage()
 
   return (
-    <section id="why" data-state="7">
+    <section id="why" data-state="7" data-stroke>
       <div className="head">
         <div className="label r">
           <b>∞ 296°</b> <span>{t('s7label')}</span>

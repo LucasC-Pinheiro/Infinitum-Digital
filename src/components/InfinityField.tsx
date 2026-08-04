@@ -104,8 +104,7 @@ export function InfinityField() {
 
     const tier = resolveTier()
     let disposed = false
-    let rail: HTMLElement | null = null
-    let layout: LayoutCache = readLayout(null)
+    let layout: LayoutCache = readLayout()
 
     // ---- estado do loop -------------------------------------------------
     let sCur = 0
@@ -116,7 +115,7 @@ export function InfinityField() {
     let energy = 0
     let pointerLerpX = 0
     let pointerLerpY = 0
-    let railCur = 0
+    let driftCur = 0
     let lastDeep = false
     let pageVisible = true
     let last = performance.now()
@@ -218,8 +217,7 @@ export function InfinityField() {
       lastDraw = now
 
       if (fieldRuntime.layoutDirty) {
-        rail = rail ?? document.getElementById('rail')
-        layout = readLayout(rail)
+        layout = readLayout()
         fieldRuntime.layoutDirty = false
       }
 
@@ -305,19 +303,19 @@ export function InfinityField() {
       pointerLerpX = damp(pointerLerpX, fieldRuntime.pointerX, 0.05, dt)
       pointerLerpY = damp(pointerLerpY, fieldRuntime.pointerY, 0.05, dt)
 
-      // O grupo desliza junto com o trilho horizontal da seção Sobre, mas só
-      // enquanto o campo está no estado 6 — daí o peso por distância.
-      const railWeight = Math.max(0, 1 - Math.abs(sCur - 6))
-      railCur = damp(railCur, -fieldRuntime.railOffset * 20 * railWeight, 0.03, dt)
+      // O grupo desliza na horizontal conforme a seção Sobre é percorrida, mas
+      // só enquanto o campo está no estado 6 — daí o peso por distância.
+      const driftWeight = Math.max(0, 1 - Math.abs(sCur - 6))
+      driftCur = damp(driftCur, -progress.drift * 20 * driftWeight, 0.03, dt)
 
       const time = uniforms.uTime.value
       setGroup?.(
-        railCur,
+        driftCur,
         pointerLerpX * 0.5 + Math.sin(time * 0.12) * 0.06 + sCur * 0.18,
         -pointerLerpY * 0.32 + Math.cos(time * 0.1) * 0.04,
         Math.sin(sCur * 0.6) * 0.05,
       )
-      setCamera?.(lerpState(CAMERA_Z, a, mix), pointerLerpX * 3, -pointerLerpY * 2, railCur * 0.35)
+      setCamera?.(lerpState(CAMERA_Z, a, mix), pointerLerpX * 3, -pointerLerpY * 2, driftCur * 0.35)
       renderGl?.()
     }
 

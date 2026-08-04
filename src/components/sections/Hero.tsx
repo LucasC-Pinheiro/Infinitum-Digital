@@ -7,17 +7,26 @@ import { useLanguage } from '@/lib/i18n/useLanguage'
 
 /** Largura útil do viewBox. Texto maior que isso encolhe — nunca estica. */
 const MAX_TEXT_WIDTH = 97.5
-const THREE_LINE_Y = [19, 39.5, 60]
-const TWO_LINE_Y = [26, 53]
 const SWEEP_MS = 2300
 
+/**
+ * Geometria por número de linhas. A altura do viewBox acompanha o bloco de
+ * texto em vez de ser fixa: com caixa fixa, duas linhas deixavam ~25% de vazio
+ * dentro do SVG, e como a altura renderizada é presa à largura pela proporção
+ * do viewBox, esse vazio empurrava o rodapé do hero para fora da dobra.
+ */
+const GEOMETRY = {
+  2: { box: 47, fontSize: 23, y: [19, 43], carveY: 23.5, carveAmp: 1.33 },
+  3: { box: 62, fontSize: 20.5, y: [19, 39.5, 60], carveY: 36, carveAmp: 1.75 },
+} as const
+
 /** Traço em lemniscata que serve de máscara para a versão iluminada do texto. */
-function buildCarvePath(): string {
+function buildCarvePath(cy: number, ampY: number): string {
   let d = ''
   for (let i = 0; i <= 280; i++) {
     const t = (i / 280) * 6.2831
     const p = lemniscate(t, 54)
-    d += `${i ? 'L' : 'M'}${(49 + p[0]).toFixed(2)} ${(36 + p[1] * 1.75).toFixed(2)} `
+    d += `${i ? 'L' : 'M'}${(49 + p[0]).toFixed(2)} ${(cy + p[1] * ampY).toFixed(2)} `
   }
   return d.trim()
 }
@@ -38,10 +47,8 @@ export function Hero({ booted, secondPass }: HeroProps) {
   const sweepTimer = useRef(0)
   const prevSecondPass = useRef(secondPass)
 
-  const carveD = useMemo(() => buildCarvePath(), [])
-  const twoLines = copy.lines.length === 2
-  const fontSize = twoLines ? 23 : 20.5
-  const yFor = (i: number) => (twoLines ? TWO_LINE_Y[i] : THREE_LINE_Y[i])
+  const geo = copy.lines.length === 2 ? GEOMETRY[2] : GEOMETRY[3]
+  const carveD = useMemo(() => buildCarvePath(geo.carveY, geo.carveAmp), [geo])
 
   /** Encolhe a linha que estourar a caixa. Nunca alarga: esticar deforma. */
   const fit = useCallback(() => {
@@ -147,8 +154,8 @@ export function Hero({ booted, secondPass }: HeroProps) {
     <text
       key={line.text}
       x="0"
-      y={yFor(i)}
-      fontSize={fontSize}
+      y={geo.y[i]}
+      fontSize={geo.fontSize}
       className={line.italic ? 'ital' : undefined}
     >
       {line.text}
@@ -163,20 +170,43 @@ export function Hero({ booted, secondPass }: HeroProps) {
         </div>
       </div>
 
-      <div id="carveWrap">
-        <svg ref={svgRef} id="heroSvg" viewBox="0 0 100 62" role="img" aria-label={copy.alt}>
-          <defs>
-            <mask id="carve">
-              <path ref={pathRef} id="carvePath" d={carveD} />
-            </mask>
-          </defs>
-          <g className="baseT" id="baseT">
-            {lines}
-          </g>
-          <g className="litT" id="litT" mask="url(#carve)">
-            {lines}
-          </g>
-        </svg>
+      {/* No desktop a divisão de quem-faz-o-quê ocupa a coluna livre à direita
+          do título, e não uma faixa abaixo dele: o hero ganha a informação sem
+          gastar altura, e a composição deixa de ser uma pilha centrada. */}
+      <div className="heroBody">
+        <div id="carveWrap">
+          <svg
+            ref={svgRef}
+            id="heroSvg"
+            viewBox={`0 0 100 ${geo.box}`}
+            role="img"
+            aria-label={copy.alt}
+          >
+            <defs>
+              <mask id="carve">
+                <path ref={pathRef} id="carvePath" d={carveD} />
+              </mask>
+            </defs>
+            <g className="baseT" id="baseT">
+              {lines}
+            </g>
+            <g className="litT" id="litT" mask="url(#carve)">
+              {lines}
+            </g>
+          </svg>
+        </div>
+
+        <div className="heroSub">
+          <p className="heroWho">
+            <b>Lucas</b>
+            <span>{t('heroLucas')}</span>
+          </p>
+          <p className="heroWho">
+            <b>Enzo</b>
+            <span>{t('heroEnzo')}</span>
+          </p>
+          <p className="heroClose">{t('heroClose')}</p>
+        </div>
       </div>
 
       <div className="heroFoot">

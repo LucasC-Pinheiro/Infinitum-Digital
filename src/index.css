@@ -463,9 +463,63 @@ section {
   justify-content: flex-end;
   gap: clamp(24px, 5vh, 48px);
 }
+/* Empilhado no mobile; no desktop vira duas colunas de peso desigual, com o
+   bloco "quem faz o quê" alinhado pela base do título. */
+.heroBody {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(26px, 5vh, 46px);
+}
 #carveWrap {
   width: 100%;
   max-width: 1150px;
+}
+@media (min-width: 900px) {
+  .heroBody {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: clamp(36px, 5vw, 78px);
+  }
+  #carveWrap {
+    flex: 0 1 62%;
+  }
+  .heroSub {
+    flex: 1 1 34%;
+    padding-bottom: clamp(6px, 3vh, 34px);
+  }
+}
+.heroSub {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  max-width: 46ch;
+}
+/* Rótulo mono à esquerda, frase em Inter à direita: quem faz o quê fica
+   legível numa varrida, sem virar parágrafo. */
+.heroWho {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: clamp(0.93rem, 3.4vw, 1.04rem);
+  line-height: 1.5;
+  color: var(--color-dim);
+}
+.heroWho b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-amber);
+}
+.heroClose {
+  margin-top: 5px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 14px;
+  font-size: clamp(0.86rem, 3.1vw, 0.94rem);
+  line-height: 1.55;
+  color: var(--color-muted);
 }
 #carveWrap svg {
   width: 100%;
@@ -666,107 +720,154 @@ section {
   opacity: 1;
 }
 
-/* ---------- SOBRE (trilho horizontal com scroll-snap) ---------- */
-#about {
-  padding-left: 0;
-  padding-right: 0;
+/* ---------- QUEM CONSTRÓI — composição de tela cheia ----------
+   Sem contêiner: nenhum fundo, nenhuma moldura, nenhum padding uniforme. O
+   que segura a composição é um traço vertical único atravessando a seção, com
+   os dois fundadores pendurados nele em alturas e larguras diferentes. */
+.filterDefs {
+  position: absolute;
+  width: 0;
+  height: 0;
   overflow: hidden;
-  max-width: none;
 }
-#about .inner {
-  max-width: var(--wrap);
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 var(--gut);
+
+/* A composição é o conteúdo: aperta a respiração das bordas para os dois
+   fundadores caberem na mesma tela que o título. */
+#about {
+  padding-top: clamp(74px, 10vh, 116px);
+  padding-bottom: clamp(34px, 5.5vh, 64px);
 }
-.rail {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  margin-top: clamp(28px, 5vh, 50px);
-  cursor: grab;
+
+/* Base = mobile: coluna única, o traço vira a margem viva à esquerda e os dois
+   blocos se penduram nele — mesmo princípio do .capsWrap estreito. */
+.builders {
+  display: grid;
+  grid-template-columns: 1px minmax(0, 1fr);
+  column-gap: clamp(18px, 5vw, 28px);
+  row-gap: clamp(28px, 4.2vh, 48px);
+  margin-top: clamp(18px, 2.8vh, 44px);
 }
-.rail::-webkit-scrollbar {
-  display: none;
+.spine {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  position: relative;
+  background: var(--color-line);
 }
-.rail.drag {
-  cursor: grabbing;
+.spine:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-amber);
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: transform 2.6s var(--ease);
 }
-.slide {
-  flex: 0 0 100%;
-  scroll-snap-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
+#about.in .spine:before {
+  transform: scaleY(1);
 }
-.slide .pad {
-  max-width: var(--wrap);
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 var(--gut);
+.b1 {
+  grid-column: 2;
+  grid-row: 1;
 }
-.sIdx {
+.b2 {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* Desktop: colunas de peso desigual (≈60/40) e o segundo bloco descendo bem
+   abaixo do primeiro. É o deslocamento vertical que impede a leitura de
+   "grid de duas colunas"; o traço passa entre eles. */
+@media (min-width: 900px) {
+  .builders {
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 0.66fr);
+    column-gap: clamp(38px, 5vw, 76px);
+    align-items: start;
+  }
+  .spine {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+    min-height: clamp(300px, 46vh, 460px);
+  }
+  .b1 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .b2 {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: clamp(44px, 7vh, 128px);
+  }
+  /* Na horizontal a composição é limitada pela altura, não pela largura: num
+     notebook de 720p o teto em px caberia na largura e estouraria a dobra,
+     cortando justamente a frase de cada fundador. Tudo que ocupa altura passa
+     a ser medido em vh, com o valor em px virando só o limite superior — a
+     escala cresce continuamente com a tela, sem degrau em nenhum breakpoint. */
+  #about h2 {
+    font-size: min(4.9rem, 8.6vh);
+  }
+  .builderPhoto {
+    width: min(172px, 14.5vh);
+  }
+  .builderName {
+    font-size: min(3.7rem, 6.6vh);
+  }
+  .builderRole {
+    font-size: min(1.38rem, 2.5vh);
+  }
+}
+
+/* Retrato: proporção fixa + cover, então nenhuma das duas fotos distorce,
+   independentemente do recorte original. Sem borda — moldura é sinal de card.
+   As duas máscaras se cruzam para apagar a base e as laterais da foto: com as
+   quatro arestas dissolvidas o retrato se apoia no campo de partículas em vez
+   de flutuar sobre ele dentro de um retângulo. Não é decoração em gradiente —
+   é canal alfa; nenhum pixel de cor sai daqui. */
+.builderPhoto {
+  display: block;
+  width: clamp(96px, 25vw, 172px);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center top;
+  filter: url(#duotone);
+  -webkit-mask-image:
+    linear-gradient(to bottom, #000 54%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+  mask-image:
+    linear-gradient(to bottom, #000 54%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.builderIdx {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.24em;
   color: var(--color-amber);
+  margin-top: 14px;
 }
-.sName {
+.builderName {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(2.5rem, 10.5vw, 5.4rem);
-  line-height: 0.94;
+  font-size: clamp(2.2rem, 8.6vw, 3.7rem);
+  line-height: 0.96;
   letter-spacing: -0.03em;
-  margin-top: 6px;
+  margin-top: 7px;
 }
-.sOut {
+.builderRole {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: clamp(1.05rem, 4.2vw, 1.6rem);
+  font-size: clamp(1.02rem, 4vw, 1.38rem);
   color: var(--color-dim);
-  max-width: 24ch;
-  margin-top: 4px;
+  max-width: 22ch;
+  margin-top: 5px;
 }
-/* Mesma régua visual do .sQuote do protótipo. Classe própria porque a bio é
-   conteúdo essencial da seção e não pode sumir abaixo de 380px. */
-.sBio {
-  font-size: clamp(0.88rem, 3.3vw, 0.98rem);
-  line-height: 1.62;
+.builderLine {
+  font-size: clamp(0.9rem, 3.3vw, 1rem);
+  line-height: 1.6;
   color: var(--color-muted);
-  max-width: 36ch;
-  margin-top: 16px;
-  border-left: 1px solid var(--color-line);
-  padding-left: 15px;
-}
-.sMeta {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  gap: 20px;
-  flex-wrap: wrap;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  border-top: 1px solid var(--color-line);
-  padding-top: 11px;
-  margin-top: 18px;
-}
-/* Retrato: proporção fixa + cover, então nenhuma das duas fotos distorce,
-   independentemente do recorte original. */
-.sPhoto {
-  display: block;
-  width: clamp(92px, 20vw, 132px);
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  object-position: center top;
-  border: 1px solid var(--color-line);
-  margin-bottom: 16px;
+  max-width: 34ch;
+  margin-top: clamp(11px, 1.7vh, 16px);
 }
 
 /* ---------- WHY — um traço só, contínuo ---------- */
@@ -1049,6 +1150,9 @@ footer.site {
   }
   .oneStroke:before {
     transform: scaleX(1);
+  }
+  .spine:before {
+    transform: scaleY(1);
   }
   .caps p:before {
     transform: scaleY(1);

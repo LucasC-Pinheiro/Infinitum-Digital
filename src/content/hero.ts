@@ -11,15 +11,21 @@ export interface HeroCopy {
   alt: string
 }
 
-/** Primeira passagem — θ 000°. */
+/**
+ * Primeira passagem — θ 000°.
+ *
+ * "Tecnologia que parece inevitável" continua sendo a assinatura da marca, mas
+ * vive no rótulo mono acima do título: a manchete precisa dizer o que a dupla
+ * entrega, não só como isso soa.
+ */
 export const HERO: Record<Language, HeroCopy> = {
   pt: {
-    lines: [{ text: 'Tecnologia' }, { text: 'que parece' }, { text: 'inevitável.', italic: true }],
-    alt: 'Tecnologia que parece inevitável.',
+    lines: [{ text: 'Duas pessoas.' }, { text: 'O processo inteiro.', italic: true }],
+    alt: 'Duas pessoas. O processo inteiro.',
   },
   en: {
-    lines: [{ text: 'Technology' }, { text: 'that feels' }, { text: 'inevitable.', italic: true }],
-    alt: 'Technology that feels inevitable.',
+    lines: [{ text: 'Two people.' }, { text: 'The whole process.', italic: true }],
+    alt: 'Two people. The whole process.',
   },
 }
 

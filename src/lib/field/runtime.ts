@@ -16,8 +16,6 @@ export interface FieldRuntime {
   /** Posição do ponteiro normalizada em -0.5..0.5. */
   pointerX: number
   pointerY: number
-  /** Deslocamento do trilho horizontal da seção Sobre, -0.5..0.5. */
-  railOffset: number
   /** Conta regressiva do anel de pulso; > 0 enquanto anima. */
   pulse: number
   /** Reforço de brilho pontual, consumido e zerado pelo loop. */
@@ -33,7 +31,6 @@ export const fieldRuntime: FieldRuntime = {
   activityAt: 0,
   pointerX: 0,
   pointerY: 0,
-  railOffset: 0,
   pulse: 0,
   flowBump: 0,
   layoutDirty: true,

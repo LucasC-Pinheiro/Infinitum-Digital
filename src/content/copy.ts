@@ -8,7 +8,11 @@
 export const PT = {
   skip: 'Ir para o conteúdo',
 
-  heroEyebrow: 'Estúdio de sistemas inevitáveis',
+  heroEyebrow: 'Tecnologia que parece inevitável',
+  heroLucas: 'Constrói — sites, apps, automações e sistemas com IA.',
+  heroEnzo: 'Leva — tráfego pago, aquisição, escala.',
+  heroClose:
+    'Do primeiro código à primeira venda, sem time que some no meio do caminho.',
   heroCaps: 'IA · Software · Interfaces · Automação',
   heroPlace: 'São Paulo — atendimento global',
   heroSecondPass: 'θ 360° — segunda volta',
@@ -49,7 +53,6 @@ export const PT = {
 
   s6label: 'Quem constrói',
   s6h: 'Você fala com <em>quem constrói</em>.',
-  s6hint: 'Deslize na horizontal ou use as setas',
 
   s7label: 'Por que a Infinitum',
   s7h: 'Um time. Um traço. <em>Sem repasses.</em>',
@@ -74,7 +77,11 @@ export type CopyKey = keyof typeof PT
 export const EN: Record<CopyKey, string> = {
   skip: 'Skip to content',
 
-  heroEyebrow: 'Studio for inevitable systems',
+  heroEyebrow: 'Technology that feels inevitable',
+  heroLucas: 'Builds — websites, apps, automation and AI systems.',
+  heroEnzo: 'Delivers — paid traffic, acquisition, scale.',
+  heroClose:
+    'From the first line of code to the first sale, with no team that vanishes halfway.',
   heroCaps: 'AI · Software · Interfaces · Automation',
   heroPlace: 'São Paulo — worldwide',
   heroSecondPass: 'θ 360° — second pass',
@@ -115,7 +122,6 @@ export const EN: Record<CopyKey, string> = {
 
   s6label: 'Who builds it',
   s6h: 'You talk to <em>whoever builds it</em>.',
-  s6hint: 'Swipe horizontally or use the arrow keys',
 
   s7label: 'Why Infinitum',
   s7h: 'One team. One stroke. <em>No handoffs.</em>',

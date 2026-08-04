@@ -25,8 +25,8 @@ export interface LayoutCache {
   sections: SectionLayout[]
   collapseTop: number
   collapseHeight: number
-  railWidth: number
-  railMax: number
+  aboutTop: number
+  aboutHeight: number
   /** Retângulos de texto principais por estado do campo — só os estados com
    * bug de legibilidade confirmado têm entrada aqui (ver TEXT_SELECTORS). */
   textRects: Record<number, TextRect[]>
@@ -36,8 +36,8 @@ const EMPTY: LayoutCache = {
   sections: [],
   collapseTop: 0,
   collapseHeight: 1,
-  railWidth: 1,
-  railMax: 1,
+  aboutTop: 0,
+  aboutHeight: 1,
   textRects: {},
 }
 
@@ -50,11 +50,15 @@ const EMPTY: LayoutCache = {
  * estado sem entrada aqui simplesmente não participa da repulsão de texto.
  */
 const TEXT_SELECTORS: Record<number, { root: string; selectors: string[] }> = {
+  // O rótulo do hero carrega a assinatura da marca e cai bem no meio do ∞ do
+  // estado 1; a manchete fica de fora de propósito — ela é grande demais para
+  // ser aberta sem desmontar a lemniscata, e atravessá-la é o efeito aprovado.
+  1: { root: '#hero', selectors: ['.label', '.heroSub'] },
   2: { root: '#auto', selectors: ['.head', '.loop'] },
   3: { root: '#web', selectors: ['.head', '.figures'] },
   4: { root: '#systems', selectors: ['.manifesto'] },
   5: { root: '#collapse', selectors: ['#collapseInner'] },
-  6: { root: '#about', selectors: ['.head', '.slide .pad'] },
+  6: { root: '#about', selectors: ['.head', '.b1', '.b2'] },
   7: { root: '#why', selectors: ['.head', '.caps'] },
   8: { root: '#cta', selectors: ['.ctaBlock'] },
 }
@@ -91,13 +95,14 @@ function readTextRects(): Record<number, TextRect[]> {
  * só este ponto lê, e apenas quando marcado como sujo, para não forçar reflow
  * a cada frame.
  */
-export function readLayout(rail: HTMLElement | null): LayoutCache {
+export function readLayout(): LayoutCache {
   const nodes = Array.from(
     document.querySelectorAll<HTMLElement>('section[data-state]'),
   )
   if (nodes.length === 0) return EMPTY
 
   const collapse = document.getElementById('collapse')
+  const about = document.getElementById('about')
 
   return {
     sections: nodes.map((el) => ({
@@ -107,8 +112,8 @@ export function readLayout(rail: HTMLElement | null): LayoutCache {
     })),
     collapseTop: collapse?.offsetTop ?? 0,
     collapseHeight: collapse?.offsetHeight || 1,
-    railWidth: rail?.clientWidth || 1,
-    railMax: Math.max(1, (rail?.scrollWidth ?? 1) - (rail?.clientWidth ?? 0)),
+    aboutTop: about?.offsetTop ?? 0,
+    aboutHeight: about?.offsetHeight || 1,
     textRects: readTextRects(),
   }
 }
@@ -120,6 +125,12 @@ export interface FieldProgress {
   eclipse: number
   /** Estamos no miolo da pausa (dispara o texto do #collapse). */
   deep: boolean
+  /**
+   * -0.5..0.5 — avanço dentro da seção Sobre. A faixa lateral do estado 6
+   * desliza na horizontal conforme ela é percorrida, então atravessar a seção
+   * continua arrastando o ∞ de lado como o antigo trilho fazia.
+   */
+  drift: number
 }
 
 /**
@@ -162,5 +173,6 @@ export function computeProgress(
     target,
     eclipse: inside ? clamp(1 - Math.abs(cf - 0.5) / 0.42, 0, 1) : 0,
     deep: cf > 0.18 && cf < 0.82,
+    drift: clamp((mid - layout.aboutTop) / layout.aboutHeight - 0.5, -0.5, 0.5),
   }
 }
