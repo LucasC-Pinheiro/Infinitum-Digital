@@ -4,23 +4,23 @@ import { useLanguage } from '@/lib/i18n/useLanguage'
 
 /** Alça esquerda da lemniscata: o que se constrói. */
 const ITEMS: LoopItem[] = [
-  { title: 'autoT1', detail: 'autoD1' },
-  { title: 'autoT2', detail: 'autoD2' },
-  { title: 'autoT3', detail: 'autoD3' },
+  { title: 'buildT1', detail: 'buildD1' },
+  { title: 'buildT2', detail: 'buildD2' },
+  { title: 'buildT3', detail: 'buildD3' },
 ]
 
-export function Automation() {
+export function Build() {
   const { t } = useLanguage()
 
   return (
-    <section id="auto" data-state="3">
+    <section id="build" data-state="2">
       <div className="head">
         <div className="label r">
-          <b>∞ 093°</b> <span>{t('autoLabel')}</span>
+          <b>∞ 041°</b> <span>{t('buildLabel')}</span>
         </div>
-        <Rich as="h2" className="r" data-d="1" text={t('autoH')} />
+        <Rich as="h2" className="r" data-d="1" text={t('buildH')} />
         <p className="body r" data-d="2">
-          {t('autoP')}
+          {t('buildP')}
         </p>
       </div>
 

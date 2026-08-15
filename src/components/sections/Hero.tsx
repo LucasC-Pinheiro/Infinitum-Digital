@@ -32,12 +32,10 @@ function buildCarvePath(cy: number, ampY: number): string {
 }
 
 interface HeroProps {
-  /** A cortina saiu; pode começar a contar para o traço automático. */
-  booted: boolean
   secondPass: boolean
 }
 
-export function Hero({ booted, secondPass }: HeroProps) {
+export function Hero({ secondPass }: HeroProps) {
   const { t, lang } = useLanguage()
   const copy = secondPass ? HERO_SECOND_PASS[lang] : HERO[lang]
 
@@ -133,12 +131,12 @@ export function Hero({ booted, secondPass }: HeroProps) {
     return () => events.forEach((ev) => window.removeEventListener(ev, carveOnce))
   }, [carveOnce])
 
-  // ...ou sozinho, 1,2s depois que a cortina sai.
+  // ...ou sozinho, logo depois de montar. O site abre direto no hero, sem
+  // cortina antes, então o traço é a primeira coisa que acontece na página.
   useEffect(() => {
-    if (!booted) return
-    const timer = window.setTimeout(carveOnce, 1200)
+    const timer = window.setTimeout(carveOnce, 140)
     return () => window.clearTimeout(timer)
-  }, [booted, carveOnce])
+  }, [carveOnce])
 
   // Texto novo pede traço novo — mas só depois que o primeiro já aconteceu.
   useEffect(() => {
@@ -196,22 +194,28 @@ export function Hero({ booted, secondPass }: HeroProps) {
           </svg>
         </div>
 
-        <div className="heroSub">
-          <p className="heroWho">
-            <b>Lucas</b>
-            <span>{t('heroLucas')}</span>
-          </p>
-          <p className="heroWho">
-            <b>Enzo</b>
-            <span>{t('heroEnzo')}</span>
-          </p>
-          <p className="heroClose">{t('heroClose')}</p>
-        </div>
+        <p className="heroSub">{t('heroSub')}</p>
       </div>
 
+      {/* Itens separados por régua de 1px, nunca por caractere: ponto médio e
+          interponto estão fora do sistema de escrita (ver content/copy.ts). */}
       <div className="heroFoot">
-        <span>{t('heroCaps')}</span>
-        <span id="heroPass">{secondPass ? t('heroSecondPass') : t('heroPlace')}</span>
+        <ul className="ruled">
+          <li>{t('heroCap1')}</li>
+          <li>{t('heroCap2')}</li>
+          <li>{t('heroCap3')}</li>
+          <li>{t('heroCap4')}</li>
+        </ul>
+        <ul className="ruled" id="heroPass">
+          {secondPass ? (
+            <li>{t('heroSecondPass')}</li>
+          ) : (
+            <>
+              <li>{t('heroPlace1')}</li>
+              <li>{t('heroPlace2')}</li>
+            </>
+          )}
+        </ul>
       </div>
     </section>
   )

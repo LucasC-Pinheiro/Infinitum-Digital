@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Evidência de QA (screenshots, relatórios Lighthouse) — não commitada.
+test-results
+playwright-report
+qa-evidence
+blob-report
+playwright/.cache
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -4,10 +4,16 @@ import { useEffect } from 'react'
  * Revela os elementos `.r` quando entram na viewport, e marca as seções
  * `[data-stroke]` para dispararem o traço contínuo que as atravessa.
  *
- * Um observer só para a página inteira: os elementos `.r` são estáticos (a
- * troca de idioma altera o texto, não os nós), então basta observar uma vez.
- * A classe `.in` é escrita direto no DOM porque o React não reescreve
- * className quando a prop não muda — os dois convivem sem brigar.
+ * A marca de "já revelado" é o atributo `data-in`, e não uma classe.
+ *
+ * Isso não é estilo, é correção de um bug: o observer escreve direto no DOM,
+ * fora do React. Num elemento cujo `className` é uma prop que muda (a lista de
+ * automação alterna entre `r` e `r on` no hover), a reconciliação reescreve o
+ * atributo `class` inteiro e apaga a classe que o observer tinha somado. Como
+ * o observer já chamou `unobserve`, ela nunca voltava, e o `.r { opacity: 0 }`
+ * ficava valendo para sempre: passar o cursor apagava a linha até dar reload.
+ * O React só toca nos atributos que ele mesmo gerencia, então `data-in` — que
+ * nenhum componente declara — sobrevive a qualquer re-render.
  */
 export function useRevealOnScroll(): void {
   useEffect(() => {
@@ -15,7 +21,7 @@ export function useRevealOnScroll(): void {
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue
-          entry.target.classList.add('in')
+          entry.target.setAttribute('data-in', '')
           reveal.unobserve(entry.target)
         }
       },
@@ -29,7 +35,7 @@ export function useRevealOnScroll(): void {
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue
-          entry.target.classList.add('in')
+          entry.target.setAttribute('data-stroke-in', '')
           strokeObserver.unobserve(entry.target)
         }
       },

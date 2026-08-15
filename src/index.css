@@ -121,8 +121,22 @@
   --gut: clamp(22px, 5.5vw, 80px);
   --wrap: 1440px;
   --ease: cubic-bezier(0.22, 0.61, 0.24, 1);
-  /* Eclipse: 0-1, escrito a cada frame pelo campo durante a seção #collapse. */
-  --ecl: 0;
+  /* Altura real da barra fixa: 14px de padding em cima e embaixo mais o alvo
+     de 44px dos itens. É a faixa que o nav ocupa. */
+  --nav-h: 72px;
+  /* Faixa reservada no topo das seções para o conteúdo nunca nascer debaixo do
+     nav. O nav não tem fundo, então sobreposição ali deixa os dois ilegíveis:
+     a correção é estrutural, o texto não ocupa aquela altura. */
+  --nav-safe: calc(var(--nav-h) + clamp(28px, 6vh, 68px));
+  /* Altura do trilho dentro da seção de processo. O texto das paradas fica
+     abaixo dele.
+
+     São exatamente 50% porque é aí que a linha do campo de partículas cai: a
+     câmera olha para a origem da cena, e a origem projeta no meio vertical da
+     tela. Qualquer outro valor descola o traço de partículas dos marcadores
+     âmbar, e a linha passa a cortar os títulos em vez de correr acima
+     deles. */
+  --rail-y: 50%;
 }
 
 * {
@@ -143,10 +157,6 @@ body {
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
-}
-body.locked {
-  overflow: hidden;
-  height: 100dvh;
 }
 ::selection {
   background: var(--color-amber);
@@ -200,6 +210,48 @@ a {
 #field.live {
   opacity: 1;
 }
+
+/* Rede de segurança: nenhuma tela pode ficar sem a lemniscata. Fica sempre
+   montado, visível só quando o WebGL não está de fato desenhando (sem
+   suporte, falha na inicialização ou contexto perdido — ver
+   FieldFallback.tsx e InfinityField.tsx). */
+#fieldFallback {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s var(--ease);
+}
+#fieldFallback[data-show] {
+  opacity: 1;
+  animation: fieldBreathe 6s ease-in-out infinite;
+}
+#fieldFallback svg {
+  width: min(70vw, 620px);
+  height: auto;
+  overflow: visible;
+}
+#fieldFallback path {
+  fill: none;
+  stroke: var(--color-amber);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+@keyframes fieldBreathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 #vignette {
   position: fixed;
   inset: 0;
@@ -216,10 +268,39 @@ main {
   position: relative;
   z-index: 3;
 }
-nav,
-footer.site,
-main > section:not(#collapse) {
-  opacity: calc(1 - var(--ecl));
+
+/* Transição de rota: só o texto participa. O canvas fica fora deste elemento,
+   no App, e segue morfando para o novo estado sem cortar. */
+.routeFade {
+  animation: routeIn 320ms var(--ease) both;
+}
+@keyframes routeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+/* Itens em linha separados por régua de 1px. É o substituto do ponto médio:
+   nenhum separador do site é caractere. */
+.ruled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+}
+.ruled li {
+  display: inline-flex;
+  align-items: center;
+}
+.ruled li + li:before {
+  content: "";
+  width: 1px;
+  height: 0.85em;
+  margin: 0 clamp(10px, 1.6vw, 16px);
+  background: var(--color-line);
+  flex: none;
 }
 
 .label {
@@ -251,10 +332,6 @@ h2 {
   line-height: 1;
   letter-spacing: -0.015em;
   max-width: 17ch;
-  /* Rede de segurança, não a defesa principal: a repulsão do campo (ver
-     InfinityField.tsx) já afasta as partículas do texto. Isto só cobre o
-     resíduo eventual de alguma partícula passando perto. */
-  text-shadow: 0 2px 18px rgba(12, 12, 13, 0.5);
 }
 h2 em {
   font-style: italic;
@@ -274,7 +351,10 @@ h2 em {
     opacity 0.95s var(--ease),
     transform 0.95s var(--ease);
 }
-.r.in {
+/* Marca gravada como atributo, não como classe: ver useRevealOnScroll.ts.
+   Como classe, a reconciliação de className do React apagava o reveal e o
+   bloco ficava preso em opacity 0. */
+.r[data-in] {
   opacity: 1;
   transform: none;
 }
@@ -289,46 +369,6 @@ h2 em {
 }
 .r[data-d="4"] {
   transition-delay: 0.38s;
-}
-
-#pre {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: var(--color-graphite);
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: var(--gut);
-  transition:
-    opacity 0.9s var(--ease),
-    visibility 0.9s;
-}
-#pre.done {
-  opacity: 0;
-  visibility: hidden;
-}
-#preName {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.5em;
-  color: var(--color-muted);
-  text-transform: uppercase;
-}
-#preNum {
-  font-family: var(--font-mono);
-  font-size: clamp(1.8rem, 8vw, 3.4rem);
-  line-height: 0.9;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-}
-#preBar {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--color-amber);
-  width: 0;
 }
 
 nav {
@@ -426,6 +466,7 @@ nav {
   color: var(--color-line);
 }
 #theta {
+  position: relative;
   font-family: var(--font-mono);
   font-size: clamp(9px, 2.5vw, 11px);
   letter-spacing: 0.18em;
@@ -439,11 +480,35 @@ nav {
 #theta:hover {
   color: var(--color-bone);
 }
+/* Régua de progresso do percurso. Trilho apagado sempre presente, preenchido
+   em âmbar até a posição atual — o mesmo vocabulário de régua de 1px que
+   separa os itens do site. */
+#theta:before,
+#theta:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9px;
+  height: 1px;
+}
+#theta:before {
+  background: var(--color-line);
+}
+#theta:after {
+  background: var(--color-amber);
+  transform: scaleX(var(--theta-p, 0));
+  transform-origin: left center;
+}
 
 section {
   position: relative;
   min-height: 100svh;
-  padding: clamp(92px, 16vh, 140px) var(--gut) clamp(46px, 10vh, 90px);
+  /* O padding do topo reserva a faixa do nav: nenhum headline nasce debaixo
+     da barra fixa (ver --nav-safe). */
+  padding: var(--nav-safe) var(--gut) clamp(46px, 10vh, 90px);
+  /* Destino de âncora nunca encosta no nav. */
+  scroll-margin-top: var(--nav-h);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -451,11 +516,14 @@ section {
   margin: 0 auto;
   width: 100%;
 }
+/* As seções de trabalho são uma coluna de texto à esquerda, não uma faixa de
+   ponta a ponta. A folga da direita não é sobra: é onde a lemniscata cabe sem
+   ser desmontada pela repulsão (ver OFFSET_X em field/states.ts). */
 .head {
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 3.4vw, 26px);
-  max-width: 64rem;
+  max-width: min(100%, 46rem);
 }
 
 /* ---------- HERO ---------- */
@@ -489,37 +557,12 @@ section {
   }
 }
 .heroSub {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  max-width: 46ch;
-}
-/* Rótulo mono à esquerda, frase em Inter à direita: quem faz o quê fica
-   legível numa varrida, sem virar parágrafo. */
-.heroWho {
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr);
-  gap: 12px;
-  align-items: baseline;
-  font-size: clamp(0.93rem, 3.4vw, 1.04rem);
-  line-height: 1.5;
+  font-size: clamp(0.98rem, 3.6vw, 1.12rem);
+  line-height: 1.6;
   color: var(--color-dim);
-}
-.heroWho b {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 9.5px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-amber);
-}
-.heroClose {
-  margin-top: 5px;
-  border-top: 1px solid var(--color-line);
-  padding-top: 14px;
-  font-size: clamp(0.86rem, 3.1vw, 0.94rem);
-  line-height: 1.55;
-  color: var(--color-muted);
+  max-width: 42ch;
+  border-left: 1px solid var(--color-line);
+  padding-left: clamp(16px, 2vw, 22px);
 }
 #carveWrap svg {
   width: 100%;
@@ -567,36 +610,78 @@ section {
   text-transform: uppercase;
   color: var(--color-muted);
 }
+.heroFoot .ruled li:first-child {
+  color: var(--color-bone);
+}
 
+
+/* ---------- LISTA TIPOGRÁFICA DAS SEÇÕES DE TRABALHO ----------
+   Número em Plex Mono, título em Instrument Serif, descrição em Inter Tight,
+   régua de 1px separando. Sem caixa, sem fundo, sem borda em volta.
+
+   O hover não toca em opacity, e isso não é preferência: era exatamente aí
+   que a linha sumia (ver LoopList.tsx e useRevealOnScroll.ts). O que reage é
+   o tique âmbar à esquerda, que desliza alguns pixels, e a régua, que ganha
+   peso. */
 .loop {
-  margin-top: clamp(30px, 6vh, 54px);
+  margin-top: clamp(24px, 4vh, 42px);
   border-top: 1px solid var(--color-line);
+  list-style: none;
+  max-width: min(100%, 46rem);
 }
 .loop li {
+  position: relative;
   list-style: none;
   border-bottom: 1px solid var(--color-line);
-  padding: 17px 0;
+  padding: clamp(14px, 2vh, 20px) 0;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 12px;
   cursor: pointer;
-  transition: padding-left 0.55s var(--ease);
 }
-.loop li:hover,
-.loop li.on {
-  padding-left: 13px;
+/* A régua de baixo ganha peso e vira âmbar sob o cursor. Desenhada como
+   pseudo-elemento para animar sem mexer no border, que reflowaria a lista. */
+.loop li:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--color-amber);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.6s var(--ease);
 }
-.loop li:hover .lt,
-.loop li.on .lt {
-  color: var(--color-amber);
+.loop li:hover:after,
+.loop li[data-on]:after {
+  transform: scaleX(1);
+}
+.lTick {
+  position: absolute;
+  left: -14px;
+  top: calc(clamp(14px, 2vh, 20px) + 7px);
+  width: 7px;
+  height: 1px;
+  background: var(--color-amber);
+  opacity: 0;
+  transform: translateX(-5px);
+  transition:
+    opacity 0.45s var(--ease),
+    transform 0.45s var(--ease);
+}
+.loop li:hover .lTick,
+.loop li[data-on] .lTick {
+  opacity: 1;
+  transform: none;
 }
 .lk {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.18em;
   color: var(--color-muted);
-  padding-top: 5px;
-  text-transform: uppercase;
+  padding-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 .lt {
   font-family: var(--font-serif);
@@ -604,342 +689,384 @@ section {
   line-height: 1.12;
   transition: color 0.55s var(--ease);
 }
+.loop li:hover .lt,
+.loop li[data-on] .lt {
+  color: var(--color-amber);
+}
 .ld {
   font-size: clamp(0.86rem, 3.2vw, 0.92rem);
   color: var(--color-muted);
   line-height: 1.55;
   max-width: 46ch;
-  margin-top: 5px;
+  margin-top: 6px;
+}
+@media (min-width: 900px) {
+  .loop li {
+    grid-template-columns: 104px 1fr;
+  }
 }
 
-.figures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(24px, 5vw, 64px);
-  margin-top: clamp(32px, 6vh, 56px);
-  border-top: 1px solid var(--color-line);
-  padding-top: clamp(20px, 3.6vw, 30px);
-}
-.figures div {
-  min-width: 104px;
-}
-.figures b {
-  display: block;
-  font-family: var(--font-serif);
-  font-size: clamp(2.1rem, 8.4vw, 3.4rem);
-  line-height: 1;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-}
-.figures small {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  display: block;
-  margin-top: 9px;
-}
-
-.manifesto {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: clamp(1.55rem, 5.6vw, 2.8rem);
-  line-height: 1.26;
-  letter-spacing: -0.01em;
-  max-width: 27ch;
-  margin-top: clamp(14px, 3vw, 22px);
-  text-shadow: 0 2px 18px rgba(12, 12, 13, 0.5);
-}
-.manifesto em {
-  font-style: italic;
-  color: var(--color-amber);
-}
-.pulseBtn {
-  margin-top: clamp(28px, 5vh, 44px);
-  align-self: flex-start;
-  border-bottom: 1px solid var(--color-line);
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  padding: 12px 2px;
-  min-height: 44px;
-  transition:
-    color 0.4s,
-    border-color 0.4s;
-}
-.pulseBtn:hover {
-  color: var(--color-amber);
-  border-color: var(--color-amber);
-}
-
-#collapse {
-  height: 200svh;
-  min-height: 200svh;
+/* ---------- θ 180° — O CRUZAMENTO ----------
+   A seção é mais alta que a tela e o conteúdo fica preso no meio dela. O
+   scroll extra não rola texto nenhum: ele só segura a leitura enquanto o campo
+   puxa as duas alças para a origem e depois as solta. */
+#cross {
+  min-height: 190svh;
   padding: 0;
   display: block;
   max-width: none;
 }
-#collapseInner {
+#crossInner {
   position: sticky;
   top: 0;
   height: 100svh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  text-align: center;
-  gap: 16px;
-  padding: 0 var(--gut);
+  gap: clamp(16px, 3.4vw, 26px);
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: clamp(84px, 14vh, 130px) var(--gut) clamp(46px, 9vh, 84px);
 }
-#collapseLine {
-  font-family: var(--font-serif);
-  font-size: clamp(1.45rem, 5.6vw, 2.5rem);
-  line-height: 1.24;
-  max-width: 21ch;
-  opacity: 0;
-  transition: opacity 1.3s var(--ease);
-}
-#collapseLine em {
-  font-style: italic;
-  color: var(--color-amber);
-}
-#collapseSub {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  opacity: 0;
-  transition: opacity 1.3s var(--ease) 0.25s;
-}
-#collapseInner.deep #collapseLine,
-#collapseInner.deep #collapseSub {
-  opacity: 1;
+#crossInner .body {
+  max-width: 52ch;
 }
 
-/* ---------- QUEM CONSTRÓI — composição de tela cheia ----------
-   Sem contêiner: nenhum fundo, nenhuma moldura, nenhum padding uniforme. O
-   que segura a composição é um traço vertical único atravessando a seção, com
-   os dois fundadores pendurados nele em alturas e larguras diferentes. */
+/* ---------- θ 210° — O PROCESSO ----------
+   A lemniscata se estica numa linha reta (estado 5 em field/states.ts) e essa
+   linha vira o trilho do scroll horizontal das quatro paradas.
+
+   A contenção vertical é `position: sticky`, nativa, e não um pin de
+   biblioteca: pin insere espaçador no documento e desloca o offsetTop de tudo
+   que vem depois, que quebrava a navegação por âncora e era o maior risco em
+   Safari iOS. O JavaScript só lê o progresso e escreve translateX no trilho
+   (ver Process.tsx).
+
+   O modo trilho depende do atributo `data-rail`, escrito pelo JS apenas
+   quando existe sobra horizontal de verdade. Sem ele — tela estreita,
+   movimento reduzido, ou medição falhando — vale o fluxo vertical definido
+   como padrão logo abaixo, com o mesmo traço único do resto do site. */
+#process {
+  padding: 0;
+  display: block;
+  max-width: none;
+  min-height: 100svh;
+}
+#process[data-rail] {
+  height: calc(100svh + var(--rail-travel, 0px));
+}
+.processPin {
+  position: relative;
+}
+#process[data-rail] .processPin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+.processInner {
+  position: relative;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: var(--nav-safe) var(--gut) clamp(46px, 10vh, 90px);
+}
+#process[data-rail] .processInner {
+  height: 100%;
+  padding-bottom: 0;
+}
+/* No modo trilho o cabeçalho divide a tela com as paradas, então a manchete
+   não pode usar a escala cheia de seção: em tela larga e baixa ela empurraria
+   o trilho para fora da área visível. */
+#process[data-rail] .head h2 {
+  font-size: clamp(1.9rem, 3.4vw, 3.5rem);
+}
+
+/* O trilho visível: estático, full-bleed, ancorando os marcadores. Fica fora
+   do elemento que se move, senão a linha correria junto com as paradas. */
+.processRail {
+  display: none;
+}
+#process[data-rail] .processRail {
+  display: block;
+  position: absolute;
+  top: var(--rail-y);
+  left: calc(var(--gut) * -1);
+  right: calc(var(--gut) * -1);
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* Padrão = fluxo vertical. O modo trilho é a exceção, e não o contrário:
+   assim qualquer falha de medição cai num layout legível em vez de deixar as
+   quatro paradas lado a lado sem scroll que as alcance. */
+.processTrack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(34px, 8vw, 56px);
+  margin-top: clamp(20px, 5vh, 32px);
+  padding-left: clamp(20px, 5vw, 28px);
+  border-left: 1px solid var(--color-line);
+}
+#process[data-rail] .processTrack {
+  position: absolute;
+  top: var(--rail-y);
+  left: var(--gut);
+  flex-direction: row;
+  align-items: flex-start;
+  gap: clamp(56px, 7vw, 120px);
+  width: max-content;
+  margin-top: 0;
+  padding-left: 0;
+  border-left: none;
+  will-change: transform;
+}
+
+.stop {
+  position: relative;
+}
+#process[data-rail] .stop {
+  flex: 0 0 min(42vw, 400px);
+  padding-top: clamp(26px, 3.2vw, 40px);
+}
+.stopMarker {
+  position: absolute;
+  top: 6px;
+  left: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-amber);
+  transform: translate(-4px, -4px);
+}
+#process[data-rail] .stopMarker {
+  top: 0;
+  left: 0;
+}
+.stopNum {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--color-muted);
+  margin-bottom: clamp(10px, 1.6vw, 16px);
+  font-variant-numeric: tabular-nums;
+}
+.stopTitle {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+  line-height: 1.05;
+}
+.stopBody {
+  margin-top: clamp(10px, 1.6vw, 16px);
+  font-size: clamp(0.92rem, 1.6vw, 1rem);
+  line-height: 1.6;
+  color: var(--color-muted);
+  max-width: 34ch;
+}
+
+.processProgress {
+  display: none;
+}
+#process[data-rail] .processProgress {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(28px, 6vh, 56px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+.processProgress span {
+  width: 22px;
+  height: 1px;
+  background: var(--color-line);
+  transition: background 0.4s var(--ease);
+}
+.processProgress span.on {
+  background: var(--color-amber);
+}
+
+/* ---------- /SOBRE ----------
+   Editorial e assimétrico. A foto ocupa entre 35% e 45% da largura e o texto
+   avança sobre a coluna dela, então as duas colunas nunca se leem como um
+   grid. Os blocos alternam de lado e o segundo desce, para o olho não achar
+   um eixo de simetria. */
 .filterDefs {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
 }
-
-/* A composição é o conteúdo: aperta a respiração das bordas para os dois
-   fundadores caberem na mesma tela que o título. */
 #about {
-  padding-top: clamp(74px, 10vh, 116px);
-  padding-bottom: clamp(34px, 5.5vh, 64px);
+  padding-top: clamp(96px, 15vh, 150px);
+  gap: clamp(52px, 10vh, 108px);
+  justify-content: flex-start;
+}
+#about .head {
+  max-width: 46rem;
 }
 
-/* Base = mobile: coluna única, o traço vira a margem viva à esquerda e os dois
-   blocos se penduram nele — mesmo princípio do .capsWrap estreito. */
-.builders {
+.founder {
   display: grid;
-  grid-template-columns: 1px minmax(0, 1fr);
-  column-gap: clamp(18px, 5vw, 28px);
-  row-gap: clamp(28px, 4.2vh, 48px);
-  margin-top: clamp(18px, 2.8vh, 44px);
+  gap: clamp(18px, 3vh, 28px);
 }
-.spine {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  position: relative;
-  background: var(--color-line);
-}
-.spine:before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--color-amber);
-  transform: scaleY(0);
-  transform-origin: top center;
-  transition: transform 2.6s var(--ease);
-}
-#about.in .spine:before {
-  transform: scaleY(1);
-}
-.b1 {
-  grid-column: 2;
-  grid-row: 1;
-}
-.b2 {
-  grid-column: 2;
-  grid-row: 2;
-}
-
-/* Desktop: colunas de peso desigual (≈60/40) e o segundo bloco descendo bem
-   abaixo do primeiro. É o deslocamento vertical que impede a leitura de
-   "grid de duas colunas"; o traço passa entre eles. */
-@media (min-width: 900px) {
-  .builders {
-    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 0.66fr);
-    column-gap: clamp(38px, 5vw, 76px);
-    align-items: start;
-  }
-  .spine {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: stretch;
-    min-height: clamp(300px, 46vh, 460px);
-  }
-  .b1 {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .b2 {
-    grid-column: 3;
-    grid-row: 1;
-    margin-top: clamp(44px, 7vh, 128px);
-  }
-  /* Na horizontal a composição é limitada pela altura, não pela largura: num
-     notebook de 720p o teto em px caberia na largura e estouraria a dobra,
-     cortando justamente a frase de cada fundador. Tudo que ocupa altura passa
-     a ser medido em vh, com o valor em px virando só o limite superior — a
-     escala cresce continuamente com a tela, sem degrau em nenhum breakpoint. */
-  #about h2 {
-    font-size: min(4.9rem, 8.6vh);
-  }
-  .builderPhoto {
-    width: min(172px, 14.5vh);
-  }
-  .builderName {
-    font-size: min(3.7rem, 6.6vh);
-  }
-  .builderRole {
-    font-size: min(1.38rem, 2.5vh);
-  }
-}
-
-/* Retrato: proporção fixa + cover, então nenhuma das duas fotos distorce,
-   independentemente do recorte original. Sem borda — moldura é sinal de card.
-   As duas máscaras se cruzam para apagar a base e as laterais da foto: com as
-   quatro arestas dissolvidas o retrato se apoia no campo de partículas em vez
-   de flutuar sobre ele dentro de um retângulo. Não é decoração em gradiente —
-   é canal alfa; nenhum pixel de cor sai daqui. */
-.builderPhoto {
+/* Retrato: sem borda, porque moldura é sinal de card. As duas máscaras se
+   cruzam para dissolver a base e as laterais, e a foto passa a se apoiar no
+   campo de partículas em vez de flutuar sobre ele num retângulo. Não é
+   decoração em gradiente, é canal alfa: nenhum pixel de cor sai daqui. */
+.founderPhoto {
   display: block;
-  width: clamp(96px, 25vw, 172px);
+  width: 100%;
+  max-width: 460px;
   aspect-ratio: 4 / 5;
   object-fit: cover;
   object-position: center top;
   filter: url(#duotone);
   -webkit-mask-image:
-    linear-gradient(to bottom, #000 54%, transparent 100%),
-    linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+    linear-gradient(to bottom, #000 56%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
   mask-image:
-    linear-gradient(to bottom, #000 54%, transparent 100%),
-    linear-gradient(to right, transparent 0%, #000 13%, #000 87%, transparent 100%);
+    linear-gradient(to bottom, #000 56%, transparent 100%),
+    linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
-.builderIdx {
+.founderIdx {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.24em;
   color: var(--color-amber);
-  margin-top: 14px;
 }
-.builderName {
+.founderName {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(2.2rem, 8.6vw, 3.7rem);
-  line-height: 0.96;
+  font-size: clamp(2.3rem, 9vw, 4.2rem);
+  line-height: 0.95;
   letter-spacing: -0.03em;
-  margin-top: 7px;
+  margin-top: 8px;
 }
-.builderRole {
+.founderRole {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: clamp(1.02rem, 4vw, 1.38rem);
+  font-size: clamp(1.05rem, 4.2vw, 1.5rem);
   color: var(--color-dim);
-  max-width: 22ch;
-  margin-top: 5px;
+  margin-top: 6px;
 }
-.builderLine {
-  font-size: clamp(0.9rem, 3.3vw, 1rem);
-  line-height: 1.6;
+.founderBio {
+  font-size: clamp(0.92rem, 3.4vw, 1.02rem);
+  line-height: 1.62;
   color: var(--color-muted);
-  max-width: 34ch;
-  margin-top: clamp(11px, 1.7vh, 16px);
+  max-width: 44ch;
+  margin-top: clamp(14px, 2vh, 20px);
 }
-
-/* ---------- WHY — um traço só, contínuo ---------- */
-.oneStroke {
-  position: relative;
-  height: 1px;
-  background: var(--color-line);
-  margin-top: clamp(34px, 7vh, 58px);
-  overflow: visible;
-}
-.oneStroke:before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--color-amber);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 2.6s var(--ease);
-}
-#why.in .oneStroke:before {
-  transform: scaleX(1);
-}
-.caps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 20px 32px;
-  margin-top: 0;
-}
-.caps p {
-  position: relative;
+/* Conteúdo por preencher fica visivelmente por preencher. */
+.founderBio.todo {
+  color: var(--color-dim);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.15em;
+  font-size: clamp(0.76rem, 2.9vw, 0.84rem);
+  line-height: 1.7;
+  border-left: 1px solid var(--color-amber);
+  padding-left: 14px;
+}
+.founderStack {
+  margin-top: clamp(20px, 3vh, 30px);
+  border-top: 1px solid var(--color-line);
+  padding-top: 13px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-muted);
-  padding-top: 24px;
 }
-.caps p:before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 13px;
-  background: var(--color-amber);
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform 0.5s var(--ease);
+
+@media (min-width: 900px) {
+  .founder {
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0;
+  }
+  .founder .founderPhoto {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  /* O texto começa dentro da coluna da imagem: é a invasão que quebra a
+     simetria e impede a leitura de duas colunas paralelas. */
+  .founder .founderText {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-left: 32%;
+    padding-top: clamp(40px, 8vh, 92px);
+  }
+  /* O segundo bloco espelha o lado e desce, reforçando a assimetria.
+     Espelha de verdade: também inverte as colunas do grid, e não só a
+     posição da foto nelas. Sem isto a foto do Enzo caía na coluna larga
+     (1fr, a que era do texto) e só parava de crescer ao bater no próprio
+     `max-width`, bem mais larga que a coluna estreita (0.42fr) que segura a
+     foto do Lucas — a mesma margem de 32% do texto, pensada para a coluna
+     estreita, sobrava contra essa foto maior e invadia por cima dela. */
+  .founder.right {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.42fr);
+  }
+  .founder.right .founderPhoto {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .founder.right .founderText {
+    margin-left: 0;
+    margin-right: 32%;
+    text-align: right;
+    padding-top: clamp(72px, 14vh, 168px);
+  }
+  .founder.right .founderBio,
+  .founder.right .founderRole {
+    margin-left: auto;
+  }
+  .founder.right .ruled,
+  .founder.right .founderStack {
+    justify-content: flex-end;
+  }
+  .founder.right {
+    margin-top: clamp(40px, 8vh, 110px);
+  }
 }
-#why.in .caps p:before {
-  transform: scaleY(1);
+
+.aboutClose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(18px, 3vw, 34px);
+  border-top: 1px solid var(--color-line);
+  padding-top: clamp(26px, 4vh, 40px);
 }
-#why.in .caps p:nth-child(1):before {
-  transition-delay: 0.5s;
+/* Par com o WhatsApp: mesma pílula, mesma altura, mesma tipografia — só a
+   ênfase muda. O WhatsApp é a ação primária (borda e preenchimento âmbar no
+   hover); voltar é a saída secundária (borda neutra, acende âmbar no hover
+   em vez de nascer nele). Antes eram duas linguagens diferentes — botão
+   contornado ao lado de link de texto solto — e a diferença de altura entre
+   os dois (52px contra 44px, mais a margem que o `.magnet` só deveria ter no
+   CTA) é o que lia como desalinhado. */
+.aboutBack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 19px 32px;
+  min-height: 52px;
+  border: 1px solid var(--color-line);
+  color: var(--color-muted);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transition:
+    border-color 0.4s var(--ease),
+    color 0.4s var(--ease);
 }
-#why.in .caps p:nth-child(2):before {
-  transition-delay: 0.85s;
-}
-#why.in .caps p:nth-child(3):before {
-  transition-delay: 1.2s;
-}
-#why.in .caps p:nth-child(4):before {
-  transition-delay: 1.55s;
-}
-#why.in .caps p:nth-child(5):before {
-  transition-delay: 1.9s;
-}
-#why.in .caps p:nth-child(6):before {
-  transition-delay: 2.25s;
-}
-.capsWrap {
-  display: contents;
+.aboutBack:hover {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
 }
 
 #cta {
@@ -966,12 +1093,55 @@ section {
   font-style: italic;
   color: var(--color-amber);
 }
+.ctaP {
+  margin-top: clamp(18px, 3vh, 28px);
+  max-width: 44ch;
+  text-align: center;
+}
+/* A pergunta que antecede o botão. Em serifa itálica âmbar, o mesmo destaque
+   que o sistema já usa para a palavra que carrega a frase. */
+.ctaQuestion {
+  margin-top: clamp(22px, 4vh, 36px);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.25rem, 4.4vw, 1.9rem);
+  line-height: 1.2;
+  color: var(--color-amber);
+  text-align: center;
+}
+/* O respiro antes do botão só existe aqui: em /sobre o `.magnet` divide uma
+   linha com `.aboutBack`, dentro de `.aboutClose`, que já resolve o próprio
+   espaçamento por `gap` — a mesma margem ali empurrava só um dos dois botões
+   para baixo e desalinhava o par. */
+.ctaBlock .magnet {
+  margin-top: clamp(28px, 6vh, 48px);
+}
+/* Última linha da home: o convite para /sobre, discreto, em Plex Mono. */
+.ctaNote {
+  margin-top: clamp(34px, 7vh, 64px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  text-align: center;
+}
+.ctaNote a {
+  color: var(--color-amber);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  margin-left: 10px;
+  transition: border-color 0.4s;
+}
+.ctaNote a:hover {
+  border-bottom-color: var(--color-amber);
+}
 .magnet {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin-top: clamp(28px, 6vh, 48px);
   padding: 19px 32px;
   min-height: 52px;
   border: 1px solid var(--color-amber);
@@ -1064,58 +1234,9 @@ footer.site {
   }
 }
 
-@media (min-width: 900px) {
-  .loop li {
-    grid-template-columns: 104px 1fr;
-  }
-}
 @media (max-width: 380px) {
   :root {
     --gut: 20px;
-  }
-}
-/* Abaixo da largura em que .caps quebraria em grid de 2 colunas, o traço
-   único vira vertical: uma coluna com as seis competências ao longo dela,
-   em vez de um traço horizontal truncado num grid genérico. */
-@media (max-width: 640px) {
-  .capsWrap {
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    margin-top: clamp(34px, 7vh, 58px);
-  }
-  .oneStroke {
-    flex: 0 0 1px;
-    width: 1px;
-    height: auto;
-    margin-top: 0;
-  }
-  .oneStroke:before {
-    transform: scaleY(0);
-    transform-origin: top center;
-  }
-  #why.in .oneStroke:before {
-    transform: scaleY(1);
-  }
-  .caps {
-    grid-template-columns: 1fr;
-    gap: 22px;
-    flex: 1;
-  }
-  .caps p {
-    padding-top: 0;
-    padding-left: 30px;
-  }
-  .caps p:before {
-    top: 50%;
-    left: 0;
-    width: 16px;
-    height: 1px;
-    transform-origin: left center;
-    transform: translateY(-50%) scaleX(0);
-  }
-  #why.in .caps p:before {
-    transform: translateY(-50%) scaleX(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1132,29 +1253,23 @@ footer.site {
     opacity: 1;
     transform: none;
   }
-  #collapse {
-    height: auto;
-    min-height: auto;
+  #cross {
+    min-height: 100svh;
   }
-  #collapseInner {
+  #crossInner {
     position: relative;
     height: auto;
-    padding: 22vh var(--gut);
   }
-  #collapseLine,
-  #collapseSub {
-    opacity: 1;
+  .routeFade {
+    animation: none;
   }
   .baseT text {
     opacity: 1;
   }
-  .oneStroke:before {
+  .loop li:after {
     transform: scaleX(1);
   }
-  .spine:before {
-    transform: scaleY(1);
-  }
-  .caps p:before {
-    transform: scaleY(1);
-  }
+  /* A seção de processo não precisa de nada aqui: o modo trilho depende do
+     atributo `data-rail`, que o Process.tsx nunca escreve sob movimento
+     reduzido, e o layout padrão dela já é o fluxo vertical. */
 }

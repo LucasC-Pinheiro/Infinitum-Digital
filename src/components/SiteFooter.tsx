@@ -1,4 +1,5 @@
 import { Mail } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { InstagramIcon, WhatsAppIcon } from '@/components/icons/BrandIcons'
 import { CONTACT_EMAIL, INSTAGRAM_HANDLE, WHATSAPP_NUMBER } from '@/content/contact'
 import { useLanguage } from '@/lib/i18n/useLanguage'
@@ -15,15 +16,18 @@ export function SiteFooter() {
   return (
     <footer className="site">
       <span>Infinitum Digital</span>
-      <span>{t('fplace')}</span>
+      <ul className="ruled">
+        <li>{t('fplace1')}</li>
+        <li>{t('fplace2')}</li>
+      </ul>
 
       {/* Só visível abaixo do breakpoint em que a nav esconde âncoras e
           ícones (ver .navLinks/.navIcons em index.css) — em telas largas
           esse mesmo conteúdo já está na nav. */}
       <div className="footContact">
-        <a href="#hero">{t('navHome')}</a>
-        <a href="#about">{t('navAbout')}</a>
-        <a href="#cta">{t('navContact')}</a>
+        <Link to="/">{t('navHome')}</Link>
+        <Link to="/sobre">{t('navAbout')}</Link>
+        <Link to="/#cta">{t('navContact')}</Link>
         <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" aria-label={t('navWhatsapp')}>
           <WhatsAppIcon size={15} />
         </a>

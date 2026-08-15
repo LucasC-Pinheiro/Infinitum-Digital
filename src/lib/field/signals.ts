@@ -27,12 +27,19 @@ function createSignal<T>(initial: T): Signal<T> {
 
 /**
  * Saídas do loop de animação que a interface precisa ler. Só notificam quando
- * o valor realmente muda — theta muda no máximo uma vez por grau, e `deep`
- * duas vezes por passagem — então o React re-renderiza pouco, mesmo com o
- * loop rodando a 60fps.
+ * o valor realmente muda — theta muda no máximo uma vez por grau — então o
+ * React re-renderiza pouco, mesmo com o loop rodando a 60fps.
  */
 export const thetaDegrees = createSignal(0)
-export const collapseDeep = createSignal(false)
+
+/**
+ * Se o canvas WebGL está de fato desenhando. Começa falso porque o Three.js
+ * carrega depois, de forma adiada (ver InfinityField.tsx). Vira falso de novo
+ * se a inicialização falhar ou o contexto for perdido, e é isso que decide
+ * quando o FieldFallback estático precisa aparecer — nenhuma tela pode ficar
+ * sem a lemniscata, com ou sem WebGL.
+ */
+export const fieldLive = createSignal(false)
 
 export function useSignal<T>(signal: Signal<T>): T {
   return useSyncExternalStore(signal.subscribe, signal.get, signal.get)

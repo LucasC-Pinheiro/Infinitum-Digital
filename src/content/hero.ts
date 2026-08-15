@@ -12,20 +12,18 @@ export interface HeroCopy {
 }
 
 /**
- * Primeira passagem — θ 000°.
- *
- * "Tecnologia que parece inevitável" continua sendo a assinatura da marca, mas
- * vive no rótulo mono acima do título: a manchete precisa dizer o que a dupla
- * entrega, não só como isso soa.
+ * Primeira passagem — θ 000°. A manchete é a própria lemniscata dita em
+ * palavras: o ∞ atrás do texto passa a ilustrar a frase em vez de decorá-la.
+ * O trabalho concreto fica no subtítulo, uma linha abaixo.
  */
 export const HERO: Record<Language, HeroCopy> = {
   pt: {
-    lines: [{ text: 'Duas pessoas.' }, { text: 'O processo inteiro.', italic: true }],
-    alt: 'Duas pessoas. O processo inteiro.',
+    lines: [{ text: 'Tecnologia' }, { text: 'sem fim.', italic: true }],
+    alt: 'Tecnologia sem fim.',
   },
   en: {
-    lines: [{ text: 'Two people.' }, { text: 'The whole process.', italic: true }],
-    alt: 'Two people. The whole process.',
+    lines: [{ text: 'Technology' }, { text: 'without end.', italic: true }],
+    alt: 'Technology without end.',
   },
 }
 
